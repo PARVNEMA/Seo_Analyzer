@@ -9,8 +9,11 @@ from __future__ import annotations
 
 from functools import lru_cache
 from typing import Literal
+from dotenv import load_dotenv
 
-from pydantic import field_validator
+# Load env variables into os.environ so LangChain and other libraries can access them
+load_dotenv()
+
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -31,15 +34,28 @@ class Settings(BaseSettings):
     ENVIRONMENT: Literal["dev", "staging", "prod"] = "dev"
     API_V1_PREFIX: str = "/api/v1"
 
+    # ── AI Providers ─────────────────────────────────────────────────────
+    LLM_PROVIDER: str = "groq"
+    GEMINI_API_KEY: str = ""
+    GROQ_API_KEY: str = ""
+    GEMINI_MODEL: str = "gemini-3.5-flash"
+    GROQ_MODEL: str = "llama-3.3-70b-versatile"
+
     # ── Supabase ─────────────────────────────────────────────────────────
     SUPABASE_URL: str = ""
-    SUPABASE_KEY: str = ""
+    SUPABASE_PUBLISHABLE_KEY: str = ""
+    SUPABASE_SECRET_KEY: str = ""
 
     # ── CORS ─────────────────────────────────────────────────────────────
     CORS_ORIGINS: list[str] = ["http://localhost:3000", "http://localhost:8000"]
 
     # ── Trusted Hosts ────────────────────────────────────────────────────
     TRUSTED_HOSTS: list[str] = ["localhost", "127.0.0.1"]
+
+    @property
+    def SUPABASE_KEY(self) -> str:
+        """Returns the secret key (service role) if available, otherwise publishable key."""
+        return self.SUPABASE_SECRET_KEY or self.SUPABASE_PUBLISHABLE_KEY
 
 
 @lru_cache

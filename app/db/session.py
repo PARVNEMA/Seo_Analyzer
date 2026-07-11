@@ -1,8 +1,8 @@
-import os
 import asyncio
 import httpx
 import logging
 from typing import AsyncGenerator
+from app.core.config import get_settings
 
 logger = logging.getLogger(__name__)
 
@@ -15,10 +15,11 @@ async def get_db() -> AsyncGenerator[None, None]:
 
 async def check_db_connection() -> bool:
     """Ping Supabase REST endpoint to verify API and credentials work."""
-    url = os.getenv("SUPABASE_URL")
-    key = os.getenv("SUPABASE_KEY")
+    settings = get_settings()
+    url = settings.SUPABASE_URL
+    key = settings.SUPABASE_KEY
     if not url or not key:
-        logger.error("SUPABASE_URL or SUPABASE_KEY environment variables not set")
+        logger.error("SUPABASE_URL or Supabase Key settings are not set")
         return False
     try:
         async with httpx.AsyncClient() as client:

@@ -1,16 +1,15 @@
-import os
 from supabase import create_client, Client
 from typing import Dict, Any
+from app.core.config import get_settings
 
 def get_supabase_client() -> Client:
     """Initialize and return the Supabase client."""
-    url: str = os.getenv("SUPABASE_URL", "")
-    key: str = os.getenv("SUPABASE_KEY", "")
+    settings = get_settings()
+    url = settings.SUPABASE_URL
+    key = settings.SUPABASE_KEY
     
     if not url or not key:
-        print("Warning: SUPABASE_URL or SUPABASE_KEY not set. DB operations will fail.")
-        # Returning a dummy client or raising an error depending on strictness
-        # For Phase 1 we can just let it fail if not set, or you can handle it gracefully.
+        print("Warning: SUPABASE_URL or SUPABASE key settings not set. DB operations will fail.")
         
     return create_client(url, key)
 

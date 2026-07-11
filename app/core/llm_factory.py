@@ -1,23 +1,27 @@
-import os
+from asyncio.log import logger
 from typing import Optional
 from langchain_core.language_models.chat_models import BaseChatModel
+from app.core.config import get_settings
 
 def get_llm(model_name: Optional[str] = None) -> BaseChatModel:
     """
     Returns a configured LangChain Chat Model based on environment variables.
     Supports Groq and Google Gemini.
     """
-    provider = os.getenv("LLM_PROVIDER", "gemini").lower()
+    settings = get_settings()
+    provider = settings.LLM_PROVIDER.lower()
+    
+    logger.info(f"Initializing LLM provider: {provider} with model: {model_name or 'default'}")
     
     if provider == "groq":
         from langchain_groq import ChatGroq
-        # Defaults to a fast Groq model
-        model = model_name or os.getenv("GROQ_MODEL", "llama3-8b-8192")
-        return ChatGroq(model=model)
+        model = model_name or settings.GROQ_MODEL
+        # Pass the key explicitly to avoid os.environ search issues
+        return ChatGroq(model=model, api_key=settings.GROQ_API_KEY)
     elif provider == "gemini":
         from langchain_google_genai import ChatGoogleGenerativeAI
-        # Defaults to a fast Gemini model
-        model = model_name or os.getenv("GEMINI_MODEL", "gemini-1.5-flash")
-        return ChatGoogleGenerativeAI(model=model)
+        model = model_name or settings.GEMINI_MODEL
+        # Pass the key explicitly to avoid os.environ search issues
+        return ChatGoogleGenerativeAI(model=model, google_api_key=settings.GEMINI_API_KEY)
     else:
         raise ValueError(f"Unsupported LLM provider: {provider}")
