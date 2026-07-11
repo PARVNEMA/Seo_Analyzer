@@ -1,0 +1,9 @@
+# Run Project
+
+uv run uvicorn app.main:app --reload --port 8000
+
+# Install Dependencies
+uv pip install package_name
+
+# Activate Venv
+.venv\Scripts\activate
