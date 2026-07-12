@@ -7,9 +7,9 @@ def analyze_readability(text: str) -> Dict[str, Any]:
             "score": 0.0,
             "feedback": "No content found to analyze readability."
         }
-        
+
     score = textstat.flesch_reading_ease(text)
-    
+
     # Provide plain-language feedback
     if score >= 90:
         feedback = "Very easy to read. Easily understood by an average 11-year-old student."
@@ -25,7 +25,7 @@ def analyze_readability(text: str) -> Dict[str, Any]:
         feedback = "Difficult to read. Best understood by college graduates."
     else:
         feedback = "Very difficult to read. Best understood by university graduates."
-        
+
     return {
         "score": score,
         "feedback": feedback

@@ -5,6 +5,9 @@ class SEOAnalyzeRequest(BaseModel):
     url: HttpUrl
     keyword: Optional[str] = None
 
+class CompetitorAnalysisRequest(BaseModel):
+    keyword: str
+
 class SEOTitleSuggestion(BaseModel):
     suggested_title: str
     reasoning: str
@@ -29,3 +32,13 @@ class SEOReportResponse(BaseModel):
     title_suggestions: List[SEOTitleSuggestion] = []
     meta_suggestions: List[SEOMetaSuggestion] = []
     pagespeed_score: Optional[int] = None
+
+class CompetitorResult(BaseModel):
+    title: Optional[str]
+    link: Optional[str]
+    snippet: Optional[str]
+
+class CompetitorAnalysisResponse(BaseModel):
+    keyword: str
+    competitors: List[CompetitorResult]
+    error: Optional[str] = None

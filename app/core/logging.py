@@ -25,7 +25,8 @@ def setup_logging() -> None:
     """
     settings = get_settings()
 
-    log_level = logging.DEBUG if settings.ENVIRONMENT == "dev" else logging.INFO
+    log_level = logging.WARNING
+
     is_dev = settings.ENVIRONMENT == "dev"
 
     # Shared processors applied to every log event.
@@ -34,7 +35,7 @@ def setup_logging() -> None:
         structlog.stdlib.add_logger_name,
         structlog.stdlib.add_log_level,
         structlog.stdlib.PositionalArgumentsFormatter(),
-        structlog.processors.TimeStamper(fmt="iso"),
+        structlog.processors.TimeStamper( fmt="%H:%M:%S" if is_dev else "iso"),
         structlog.processors.StackInfoRenderer(),
         structlog.processors.UnicodeDecoder(),
     ]
@@ -75,9 +76,14 @@ def setup_logging() -> None:
     root_logger.setLevel(log_level)
 
     # Quieten noisy third-party loggers.
-    for logger_name in ("uvicorn", "uvicorn.error", "uvicorn.access"):
-        logging.getLogger(logger_name).handlers.clear()
-        logging.getLogger(logger_name).propagate = True
+    noisy_loggers = (
+        "uvicorn", "uvicorn.error", "uvicorn.access",
+        "httpx", "httpcore", "duckduckgo_search", "scrapy"
+    )
+    for logger_name in noisy_loggers:
+        noisy_logger = logging.getLogger(logger_name)
+        noisy_logger.setLevel(logging.WARNING)
+        noisy_logger.propagate = False
 
 
 def get_logger(name: str) -> structlog.stdlib.BoundLogger:

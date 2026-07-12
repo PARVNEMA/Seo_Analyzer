@@ -5,12 +5,14 @@ import tempfile
 import subprocess
 from fastapi import APIRouter, HTTPException
 from app.core.llm_factory import get_llm
-from app.schemas.seo import SEOAnalyzeRequest, SEOReportResponse
+from app.schemas.seo import SEOAnalyzeRequest, SEOReportResponse, CompetitorAnalysisRequest, CompetitorAnalysisResponse
 from app.services.seo_ai import generate_seo_suggestions
 from app.services.technical_audit import analyze_readability, fetch_pagespeed_data
 from app.db.supabase import save_seo_report
 from app.core.llm_factory import get_llm
 from app.core.config import get_settings
+from app.controllers.seo_graph_controller import execute_seo_graph
+from app.services.competitor_scraper import fetch_competitor_data, RateLimitException
 
 router = APIRouter()
 
@@ -29,6 +31,7 @@ async def test_crawl(url: str):
         scraper_dir = os.path.join(project_root, "scraper")
 
         # Run spider as a subprocess using uv run for correct environment context
+        # we run it as subprocess because else it can cause issues with the event loop in FastAPI when running Scrapy directly.
         result = subprocess.run(
             ["uv", "run", "scrapy", "crawl", "seo", "-a", f"url={url}", "-o", output_file],
             cwd=scraper_dir,
@@ -177,3 +180,35 @@ async def analyze_seo(request: SEOAnalyzeRequest):
     save_seo_report(report.model_dump())
 
     return report
+
+@router.post("/analyze-graph")
+async def analyze_seo_graph(request: SEOAnalyzeRequest):
+    """
+    Analyze a given URL for SEO metrics and generate AI suggestions using LangGraph.
+    """
+    url_str = str(request.url)
+    keyword = request.keyword
+
+    result = await execute_seo_graph(url_str, keyword)
+    return result
+
+@router.post("/competitors", response_model=CompetitorAnalysisResponse)
+async def analyze_competitors(request: CompetitorAnalysisRequest):
+    """
+    Fetch the top 5 organic competitors for a given keyword using DuckDuckGo.
+    """
+    keyword = request.keyword
+    try:
+        data = fetch_competitor_data(keyword)
+        if "error" in data:
+            return CompetitorAnalysisResponse(keyword=keyword, competitors=[], error=data["error"])
+        
+        return CompetitorAnalysisResponse(
+            keyword=keyword, 
+            competitors=data.get("competitors", []),
+            error=None
+        )
+    except RateLimitException:
+        return CompetitorAnalysisResponse(keyword=keyword, competitors=[], error="Search engine rate limit hit.")
+    except Exception as e:
+        return CompetitorAnalysisResponse(keyword=keyword, competitors=[], error=str(e))
