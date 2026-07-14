@@ -158,6 +158,7 @@ def report_generator_node(state: AgentState) -> dict:
         "technical": state.get("technical_metrics"),
         "on_page": state.get("on_page_metrics"),
         "content_gap": state.get("content_gap_analysis"),
-        "errors": state.get("errors")
+        "errors": state.get("errors"),
+        "competitors": state.get("competitor_data")
     }
     return {"final_report": report}

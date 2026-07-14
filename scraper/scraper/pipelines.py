@@ -1,13 +1,26 @@
-# Define your item pipelines here
-#
-# Don't forget to add your pipeline to the ITEM_PIPELINES setting
-# See: https://docs.scrapy.org/en/latest/topics/item-pipeline.html
+import requests
+import logging
 
+logger = logging.getLogger(__name__)
 
-# useful for handling different item types with a single interface
-from itemadapter import ItemAdapter
-
-
-class ScraperPipeline:
-    def process_item(self, item):
+class WebhookPipeline:
+    def process_item(self, item, spider):
+        job_id = getattr(spider, 'job_id', None)
+        if not job_id:
+            logger.warning("No job_id provided, skipping webhook post.")
+            return item
+            
+        webhook_url = f"http://127.0.0.1:8000/api/v1/webhook/crawls/{job_id}"
+        
+        # item is typically a dict
+        data = dict(item)
+        data['job_id'] = job_id
+        
+        try:
+            response = requests.post(webhook_url, json=data, timeout=5)
+            if response.status_code != 200:
+                logger.error(f"Failed to post to webhook: {response.text}")
+        except Exception as e:
+            logger.error(f"Webhook connection error: {e}")
+            
         return item

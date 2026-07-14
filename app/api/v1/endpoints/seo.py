@@ -202,9 +202,9 @@ async def analyze_competitors(request: CompetitorAnalysisRequest):
         data = fetch_competitor_data(keyword)
         if "error" in data:
             return CompetitorAnalysisResponse(keyword=keyword, competitors=[], error=data["error"])
-        
+
         return CompetitorAnalysisResponse(
-            keyword=keyword, 
+            keyword=keyword,
             competitors=data.get("competitors", []),
             error=None
         )

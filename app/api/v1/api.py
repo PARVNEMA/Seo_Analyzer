@@ -6,8 +6,11 @@ mounted on the FastAPI app under ``/api/v1``.
 
 from fastapi import APIRouter
 
-from app.api.v1.endpoints import seo
+from app.api.v1.endpoints import seo, crawler, ws
 
 api_router = APIRouter()
 
 api_router.include_router(seo.router, prefix="/seo", tags=["seo"])
+api_router.include_router(crawler.router, prefix="/crawler", tags=["crawler"])
+api_router.include_router(ws.router, tags=["websockets"])
+

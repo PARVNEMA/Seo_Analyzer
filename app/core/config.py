@@ -47,7 +47,7 @@ class Settings(BaseSettings):
     SUPABASE_SECRET_KEY: str = ""
 
     # ── CORS ─────────────────────────────────────────────────────────────
-    CORS_ORIGINS: list[str] = ["http://localhost:3000", "http://localhost:8000"]
+    CORS_ORIGINS: list[str] = ["http://localhost:3000", "http://localhost:8000", "http://localhost:5173"]
 
     # ── Trusted Hosts ────────────────────────────────────────────────────
     TRUSTED_HOSTS: list[str] = ["localhost", "127.0.0.1"]
