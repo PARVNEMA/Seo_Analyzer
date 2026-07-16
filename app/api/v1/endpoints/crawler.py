@@ -48,3 +48,16 @@ async def start_crawl_seo(target_url: str, background_tasks: BackgroundTasks) ->
     background_tasks.add_task(start_crawl_process, job_id, target_url, "site_seo_spider")
     
     return {"job_id": job_id, "status": "pending", "message": "SEO crawl job started"}
+
+@router.get("/jobs")
+async def list_crawl_jobs():
+    """
+    List all previously crawled websites (jobs).
+    """
+    supabase = get_supabase_client()
+    try:
+        # Fetch all crawl jobs ordered by latest first
+        response = supabase.table("crawl_jobs").select("*").order("created_at", desc=True).execute()
+        return {"status": "success", "jobs": response.data}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}

@@ -40,6 +40,7 @@ class Settings(BaseSettings):
     GROQ_API_KEY: str = ""
     GEMINI_MODEL: str = "gemini-3.5-flash"
     GROQ_MODEL: str = "llama-3.3-70b-versatile"
+    MAX_CRAWL_PAGES: int = 20
 
     # ── Supabase ─────────────────────────────────────────────────────────
     SUPABASE_URL: str = ""
@@ -51,6 +52,8 @@ class Settings(BaseSettings):
 
     # ── Trusted Hosts ────────────────────────────────────────────────────
     TRUSTED_HOSTS: list[str] = ["localhost", "127.0.0.1"]
+
+
 
     @property
     def SUPABASE_KEY(self) -> str:

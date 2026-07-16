@@ -27,10 +27,14 @@ def run_scrapy_process(job_id: str, target_url: str, spider_name: str, scraper_d
     """
     Runs the Scrapy process using the python subprocess module.
     """
+    from app.core.config import get_settings
+    settings = get_settings()
+
     cmd = [
         sys.executable, "-m", "scrapy", "crawl", spider_name,
         "-a", f"start_url={target_url}",
-        "-a", f"job_id={job_id}"
+        "-a", f"job_id={job_id}",
+        "-s", f"CLOSESPIDER_PAGECOUNT={settings.MAX_CRAWL_PAGES}"
     ]
     
     logger.info(f"Starting Scrapy process for job {job_id}: {' '.join(cmd)}")
@@ -51,13 +55,33 @@ def run_scrapy_process(job_id: str, target_url: str, spider_name: str, scraper_d
     
     if process.returncode == 0:
         logger.info(f"Scrapy job {job_id} completed successfully.")
+        
+        # Check if it was closed due to limit
+        stderr_str = stderr.decode('utf-8', errors='ignore')
+        final_status = "limit_reached" if "closespider_pagecount" in stderr_str else "completed"
+        
         # Update job status in Supabase
         from app.db.supabase import get_supabase_client
+        from app.services.embedding_service import process_and_store_embeddings
         try:
             supabase = get_supabase_client()
-            supabase.table("crawl_jobs").update({"status": "completed"}).eq("id", job_id).execute()
+            supabase.table("crawl_jobs").update({"status": final_status}).eq("id", job_id).execute()
+            
+            # Fetch all crawl_results for this job to generate embeddings
+            results = supabase.table("crawl_results").select("id, text_content, title, meta_description").eq("job_id", job_id).execute()
+            if results.data:
+                logger.info(f"Generating embeddings for {len(results.data)} pages from job {job_id}")
+                for row in results.data:
+                    if row.get("text_content"):
+                        process_and_store_embeddings(
+                            crawl_result_id=row["id"], 
+                            text_content=row["text_content"],
+                            title=row.get("title"),
+                            meta_description=row.get("meta_description"),
+                            metadata={"job_id": job_id}
+                        )
         except Exception as e:
-            logger.error(f"Failed to update job status in Supabase: {e}")
+            logger.error(f"Failed to update job status or generate embeddings: {e}")
     else:
         logger.error(f"Scrapy job {job_id} failed with code {process.returncode}")
         logger.error(f"Stderr: {stderr.decode()}")
