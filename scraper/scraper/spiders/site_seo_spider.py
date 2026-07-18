@@ -26,6 +26,8 @@ class SiteSeoSpider(CrawlSpider):
     def parse_item(self, response):
 
         item=ScraperItem()
+
+        item['url']=response.url
         # 1. Title
         title = response.css('title::text').get()
         if title:

@@ -9,6 +9,7 @@ logger = logging.getLogger(__name__)
 
 # Store active processes by job_id
 active_crawlers: Dict[str, subprocess.Popen] = {}
+cancelled_jobs = set()
 
 def stop_crawl_process(job_id: str) -> bool:
     """Stops an active crawler process by job_id."""
@@ -16,6 +17,7 @@ def stop_crawl_process(job_id: str) -> bool:
     if process:
         try:
             logger.info(f"Stopping crawler process for job {job_id}")
+            cancelled_jobs.add(job_id)
             process.terminate()
             return True
         except Exception as e:
@@ -52,45 +54,47 @@ def run_scrapy_process(job_id: str, target_url: str, spider_name: str, scraper_d
     
     if job_id in active_crawlers:
         del active_crawlers[job_id]
+        
+    is_cancelled = job_id in cancelled_jobs
+    if is_cancelled:
+        cancelled_jobs.discard(job_id)
+        
+    stderr_str = stderr.decode('utf-8', errors='ignore')
     
-    if process.returncode == 0:
+    if is_cancelled:
+        logger.info(f"Scrapy job {job_id} was manually cancelled.")
+        final_status = "cancelled"
+    elif process.returncode == 0:
         logger.info(f"Scrapy job {job_id} completed successfully.")
-        
-        # Check if it was closed due to limit
-        stderr_str = stderr.decode('utf-8', errors='ignore')
         final_status = "limit_reached" if "closespider_pagecount" in stderr_str else "completed"
-        
-        # Update job status in Supabase
-        from app.db.supabase import get_supabase_client
-        from app.services.embedding_service import process_and_store_embeddings
-        try:
-            supabase = get_supabase_client()
-            supabase.table("crawl_jobs").update({"status": final_status}).eq("id", job_id).execute()
-            
-            # Fetch all crawl_results for this job to generate embeddings
-            results = supabase.table("crawl_results").select("id, text_content, title, meta_description").eq("job_id", job_id).execute()
-            if results.data:
-                logger.info(f"Generating embeddings for {len(results.data)} pages from job {job_id}")
-                for row in results.data:
-                    if row.get("text_content"):
-                        process_and_store_embeddings(
-                            crawl_result_id=row["id"], 
-                            text_content=row["text_content"],
-                            title=row.get("title"),
-                            meta_description=row.get("meta_description"),
-                            metadata={"job_id": job_id}
-                        )
-        except Exception as e:
-            logger.error(f"Failed to update job status or generate embeddings: {e}")
     else:
         logger.error(f"Scrapy job {job_id} failed with code {process.returncode}")
-        logger.error(f"Stderr: {stderr.decode()}")
-        from app.db.supabase import get_supabase_client
-        try:
-            supabase = get_supabase_client()
-            supabase.table("crawl_jobs").update({"status": "failed"}).eq("id", job_id).execute()
-        except Exception as e:
-            logger.error(f"Failed to update job status in Supabase: {e}")
+        logger.error(f"Stderr: {stderr_str}")
+        final_status = "failed"
+        
+    # Update job status in Supabase and generate embeddings for whatever was crawled
+    from app.db.supabase import get_supabase_client
+    from app.services.embedding_service import process_and_store_embeddings
+    
+    try:
+        supabase = get_supabase_client()
+        supabase.table("crawl_jobs").update({"status": final_status}).eq("id", job_id).execute()
+        
+        # Fetch all crawl_results for this job to generate embeddings
+        results = supabase.table("crawl_results").select("id, text_content, title, meta_description").eq("job_id", job_id).execute()
+        if results.data:
+            logger.info(f"Generating embeddings for {len(results.data)} pages from job {job_id} (Status: {final_status})")
+            for row in results.data:
+                if row.get("text_content"):
+                    process_and_store_embeddings(
+                        crawl_result_id=row["id"], 
+                        text_content=row["text_content"],
+                        title=row.get("title"),
+                        meta_description=row.get("meta_description"),
+                        metadata={"job_id": job_id}
+                    )
+    except Exception as e:
+        logger.error(f"Failed to update job status or generate embeddings: {e}")
 
 async def start_crawl_process(job_id: str, target_url: str, spider_name: str):
     """

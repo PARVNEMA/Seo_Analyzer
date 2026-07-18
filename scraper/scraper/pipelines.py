@@ -9,18 +9,19 @@ class WebhookPipeline:
         if not job_id:
             logger.warning("No job_id provided, skipping webhook post.")
             return item
-            
+
         webhook_url = f"http://127.0.0.1:8000/api/v1/webhook/crawls/{job_id}"
-        
+
         # item is typically a dict
         data = dict(item)
+        data.pop('text_content', None)  # Remove headers if present, as they might not be serializable
         data['job_id'] = job_id
-        
+
         try:
             response = requests.post(webhook_url, json=data, timeout=5)
             if response.status_code != 200:
                 logger.error(f"Failed to post to webhook: {response.text}")
         except Exception as e:
             logger.error(f"Webhook connection error: {e}")
-            
+
         return item
