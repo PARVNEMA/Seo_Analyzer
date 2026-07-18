@@ -34,7 +34,7 @@ async def crawl_websocket(websocket: WebSocket, job_id: str, user= Depends(get_c
         if not active_connections[job_id]:
             del active_connections[job_id]
 
-@router.post("/webhook/crawls/{job_id}", dependencies=[Depends(get_current_user)])
+@router.post("/webhook/crawls/{job_id}")
 async def crawl_webhook(job_id: str, data: Dict[str, Any]):
     """
     Webhook endpoint for the Scrapy pipeline to post real-time updates.
