@@ -1,14 +1,19 @@
 import logging
+import os
 from typing import Optional, List, Dict
-from langchain_huggingface import HuggingFaceEmbeddings
+from langchain_huggingface import HuggingFaceEndpointEmbeddings
 from langchain_core.messages import SystemMessage, HumanMessage
 from app.db.supabase import get_supabase_client
 from app.core.llm_factory import get_llm
 
 logger = logging.getLogger(__name__)
 
-# Same embedding model used for storing
-embedding_model = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
+# Same embedding model used for storing (via API)
+# Set HUGGINGFACEHUB_API_TOKEN in your .env file
+embedding_model = HuggingFaceEndpointEmbeddings(
+    model="sentence-transformers/all-MiniLM-L6-v2",
+    huggingfacehub_api_token=os.getenv("HUGGINGFACEHUB_API_TOKEN")
+)
 
 def ask_seo_question(query: str, match_count: int = 5, filter_metadata: Optional[Dict] = None) -> str:
     """

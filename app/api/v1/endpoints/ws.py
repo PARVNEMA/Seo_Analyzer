@@ -1,7 +1,9 @@
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect
+from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Depends
 from typing import Dict, List, Any
 import json
 from app.services.crawler_service import stop_crawl_process
+from app.dependencies.auth import get_current_user_ws, get_current_user
+
 
 router = APIRouter()
 
@@ -10,12 +12,12 @@ router = APIRouter()
 active_connections: Dict[str, List[WebSocket]] = {}
 
 @router.websocket("/ws/crawls/{job_id}")
-async def crawl_websocket(websocket: WebSocket, job_id: str):
+async def crawl_websocket(websocket: WebSocket, job_id: str, user= Depends(get_current_user_ws)):
     await websocket.accept()
     if job_id not in active_connections:
         active_connections[job_id] = []
     active_connections[job_id].append(websocket)
-    
+
     try:
         while True:
             # Keep connection open, client might send messages
@@ -32,21 +34,21 @@ async def crawl_websocket(websocket: WebSocket, job_id: str):
         if not active_connections[job_id]:
             del active_connections[job_id]
 
-@router.post("/webhook/crawls/{job_id}")
+@router.post("/webhook/crawls/{job_id}", dependencies=[Depends(get_current_user)])
 async def crawl_webhook(job_id: str, data: Dict[str, Any]):
     """
     Webhook endpoint for the Scrapy pipeline to post real-time updates.
     These updates are saved to Supabase and broadcasted to WebSockets.
     """
     from app.db.supabase import get_supabase_client
-    
+
     # Save to Supabase
     try:
         supabase = get_supabase_client()
         supabase.table("crawl_results").insert(data).execute()
     except Exception as e:
         print(f"Failed to save result to Supabase: {e}")
-        
+
     # Broadcast to WebSockets
     if job_id in active_connections:
         dead_connections = []
@@ -55,8 +57,8 @@ async def crawl_webhook(job_id: str, data: Dict[str, Any]):
                 await connection.send_json(data)
             except Exception:
                 dead_connections.append(connection)
-                
+
         for connection in dead_connections:
             active_connections[job_id].remove(connection)
-            
+
     return {"status": "ok"}

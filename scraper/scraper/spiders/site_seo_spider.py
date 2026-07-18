@@ -3,6 +3,8 @@ from scrapy.spiders import CrawlSpider, Rule
 from scrapy.linkextractors import LinkExtractor
 from bs4 import BeautifulSoup
 
+from scraper.items import ScraperItem
+
 class SiteSeoSpider(CrawlSpider):
     name = "site_seo_spider"
 
@@ -22,16 +24,20 @@ class SiteSeoSpider(CrawlSpider):
             self.start_urls = []
 
     def parse_item(self, response):
+
+        item=ScraperItem()
         # 1. Title
         title = response.css('title::text').get()
         if title:
             title = title.strip()
+        item['title'] = title
 
         # 2. Meta description
         meta_description = response.xpath("//meta[@name='description']/@content").get()
         if meta_description:
             meta_description = meta_description.strip()
 
+        item['meta_description'] = meta_description
         # 3. Headers
         headers = {}
         for h in ['h1', 'h2', 'h3', 'h4', 'h5', 'h6']:
@@ -39,15 +45,20 @@ class SiteSeoSpider(CrawlSpider):
             if extracted:
                 headers[h] = [text.strip() for text in extracted if text.strip()]
 
+        item['headers'] = headers
         # 4. Images & Alt text
         images = response.css('img')
         total_images = len(images)
+        item['total_images'] = total_images
         missing_alt = sum(1 for img in images if not img.attrib.get('alt'))
 
+        item['missing_alt_images'] = missing_alt
         # 5. Links
         links = response.css('a::attr(href)').getall()
         total_links = len(links)
         broken_links = 0
+        item['total_links'] = total_links
+        item['broken_links'] = broken_links
 
         # 6. Raw Text Content
         soup = BeautifulSoup(response.body, 'html.parser')
@@ -55,14 +66,7 @@ class SiteSeoSpider(CrawlSpider):
             script.decompose()
         text_content = ' '.join(soup.get_text(separator=' ').split())
 
-        yield {
-            'url': response.url,
-            'title': title,
-            'meta_description': meta_description,
-            'headers': headers,
-            'total_images': total_images,
-            'missing_alt_images': missing_alt,
-            'total_links': total_links,
-            'broken_links': broken_links,
-            'text_content': text_content
-        }
+        item['text_content'] = text_content
+
+        yield item
+

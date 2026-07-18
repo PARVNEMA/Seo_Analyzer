@@ -1,14 +1,18 @@
 import logging
+import os
 from typing import List, Dict, Any
-from langchain_huggingface import HuggingFaceEmbeddings
+from langchain_huggingface import HuggingFaceEndpointEmbeddings
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from app.db.supabase import get_supabase_client
 
 logger = logging.getLogger(__name__)
 
-# Initialize the embedding model (this downloads the model on first run if not present locally)
-# Using a lightweight, fast model for CPU embeddings.
-embedding_model = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
+# Initialize the embedding model (using Hugging Face API to avoid local downloads)
+# Set HUGGINGFACEHUB_API_TOKEN in your .env file
+embedding_model = HuggingFaceEndpointEmbeddings(
+    model="sentence-transformers/all-MiniLM-L6-v2",
+    huggingfacehub_api_token=os.getenv("HUGGINGFACEHUB_API_TOKEN")
+)
 
 def process_and_store_embeddings(
     crawl_result_id: str, 

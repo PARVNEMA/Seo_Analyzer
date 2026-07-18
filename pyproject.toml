@@ -48,6 +48,7 @@ dependencies = [
     "sentence-transformers>=3.1.0",
     "structlog>=24.4.0",
     "supabase>=2.16.0",
+    "tavily-python>=0.7.26",
     "textstat>=0.7.13",
     "uvicorn[standard]==0.30.0",
 ]
