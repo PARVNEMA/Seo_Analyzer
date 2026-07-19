@@ -2,6 +2,7 @@ import os
 import sqlite3
 from langgraph.graph import StateGraph, END
 from langgraph.checkpoint.sqlite import SqliteSaver
+from langgraph.checkpoint.memory import InMemorySaver
 
 from app.graph.state import AgentState
 from app.graph.nodes import (
@@ -77,14 +78,15 @@ workflow.add_conditional_edges(
 workflow.add_edge("report_generator", END)
 
 # Set up local sqlite DB for Checkpointer
-PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
-DB_PATH = os.path.join(PROJECT_ROOT, "langgraph_state.sqlite")
+# PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+# DB_PATH = os.path.join(PROJECT_ROOT, "langgraph_state.sqlite")
 
-conn = sqlite3.connect(DB_PATH, check_same_thread=False)
-checkpointer = SqliteSaver(conn)
+# conn = sqlite3.connect(DB_PATH, check_same_thread=False)
+# checkpointer = SqliteSaver(conn)
+checkpointer = InMemorySaver()
 
 
-print('workflow',workflow)
+# print('workflow',workflow)
 
 # Compile the Graph
 seo_graph = workflow.compile(checkpointer=checkpointer)

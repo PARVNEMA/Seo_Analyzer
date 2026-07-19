@@ -24,7 +24,7 @@ install: ## Install all dependencies (including dev)
 	pre-commit install
 
 run: ## Run the development server with hot-reload
-	uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+	uvicorn app.main:app --reload --reload-dir app --host 0.0.0.0 --port 8000
 
 # -----------------------------------------------------------------------------
 # Testing
