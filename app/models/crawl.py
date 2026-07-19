@@ -12,6 +12,7 @@ class CrawlJob(Base):
     job_type = Column(String, nullable=False) # 'crawl' or 'crawl-seo'
     status = Column(String, default="pending") # 'pending', 'running', 'completed', 'failed'
     created_at = Column(DateTime, default=datetime.utcnow)
+    created_by = Column(String, index=True, nullable=True)
 
 class CrawlResult(Base):
     __tablename__ = "crawl_results"

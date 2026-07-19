@@ -4,8 +4,11 @@ CREATE TABLE IF NOT EXISTS public.crawl_jobs (
     target_url TEXT NOT NULL,
     job_type TEXT NOT NULL,
     status TEXT NOT NULL DEFAULT 'pending',
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+    created_by TEXT
 );
+
+
 
 -- Create crawl_results table
 CREATE TABLE IF NOT EXISTS public.crawl_results (
