@@ -41,9 +41,13 @@ def run_scrapy_process(job_id: str, target_url: str, spider_name: str, scraper_d
     
     logger.info(f"Starting Scrapy process for job {job_id}: {' '.join(cmd)}")
     
+    env = os.environ.copy()
+    env["PYTHONPATH"] = os.pathsep.join(sys.path)
+    
     process = subprocess.Popen(
         cmd,
         cwd=scraper_dir,
+        env=env,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE
     )
