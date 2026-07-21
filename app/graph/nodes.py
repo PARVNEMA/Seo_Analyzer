@@ -24,9 +24,12 @@ def crawler_node(state: AgentState) -> dict:
         scraper_dir = os.path.join(project_root, "scraper")
 
         import sys
+        env = os.environ.copy()
+        env["PYTHONPATH"] = os.pathsep.join(sys.path)
         result = subprocess.run(
             [sys.executable, "-m", "scrapy", "crawl", "seo", "-a", f"url={url}", "-o", output_file],
             cwd=scraper_dir,
+            env=env,
             capture_output=True,
             text=True
         )
