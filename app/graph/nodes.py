@@ -23,8 +23,9 @@ def crawler_node(state: AgentState) -> dict:
         project_root = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
         scraper_dir = os.path.join(project_root, "scraper")
 
+        import sys
         result = subprocess.run(
-            ["uv", "run", "scrapy", "crawl", "seo", "-a", f"url={url}", "-o", output_file],
+            [sys.executable, "-m", "scrapy", "crawl", "seo", "-a", f"url={url}", "-o", output_file],
             cwd=scraper_dir,
             capture_output=True,
             text=True
