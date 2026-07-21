@@ -1,4 +1,5 @@
 import os
+import sys
 import json
 import uuid
 import tempfile
@@ -33,7 +34,7 @@ async def test_crawl(url: str):
         # Run spider as a subprocess using uv run for correct environment context
         # we run it as subprocess because else it can cause issues with the event loop in FastAPI when running Scrapy directly.
         result = subprocess.run(
-            ["uv", "run", "scrapy", "crawl", "seo", "-a", f"url={url}", "-o", output_file],
+            [sys.executable, "-m", "scrapy", "crawl", "seo", "-a", f"url={url}", "-o", output_file],
             cwd=scraper_dir,
             capture_output=True,
             text=True
@@ -105,7 +106,7 @@ async def analyze_seo(request: SEOAnalyzeRequest):
 
         # Run spider as a subprocess using uv run for correct environment context
         result = subprocess.run(
-            ["uv", "run", "scrapy", "crawl", "seo", "-a", f"url={url_str}", "-o", output_file],
+            [sys.executable, "-m", "scrapy", "crawl", "seo", "-a", f"url={url_str}", "-o", output_file],
             cwd=scraper_dir,
             capture_output=True,
             text=True
