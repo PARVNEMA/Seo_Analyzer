@@ -20,11 +20,14 @@ function App() {
   
   const ws = useRef<WebSocket | null>(null)
 
+  const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+  const WS_BASE_URL = import.meta.env.VITE_WS_URL || 'ws://localhost:8000';
+
   useEffect(() => {
     if (!jobId) return;
 
     // Connect to WebSocket
-    ws.current = new WebSocket(`ws://localhost:8000/api/v1/ws/crawls/${jobId}`)
+    ws.current = new WebSocket(`${WS_BASE_URL}/api/v1/ws/crawls/${jobId}`)
     
     ws.current.onopen = () => {
       console.log('Connected to WebSocket')
@@ -54,7 +57,7 @@ function App() {
     setJobId(null)
 
     try {
-      const response = await fetch(`http://localhost:8000/api/v1/crawler/${type}?target_url=${encodeURIComponent(targetUrl)}`, {
+      const response = await fetch(`${API_BASE_URL}/api/v1/crawler/${type}?target_url=${encodeURIComponent(targetUrl)}`, {
         method: 'POST'
       })
       const data = await response.json()
