@@ -16,7 +16,6 @@ class WebhookPipeline:
 
         # item is typically a dict
         data = dict(item)
-        data.pop('text_content', None)  # Remove headers if present, as they might not be serializable
         data['job_id'] = job_id
 
         try:

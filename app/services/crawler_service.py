@@ -84,19 +84,16 @@ def run_scrapy_process(job_id: str, target_url: str, spider_name: str, scraper_d
         supabase = get_supabase_client()
         supabase.table("crawl_jobs").update({"status": final_status}).eq("id", job_id).execute()
         
-        # Fetch all crawl_results for this job to generate embeddings
-        results = supabase.table("crawl_results").select("id, text_content, title, meta_description").eq("job_id", job_id).execute()
-        if results.data:
-            logger.info(f"Generating embeddings for {len(results.data)} pages from job {job_id} (Status: {final_status})")
-            for row in results.data:
-                if row.get("text_content"):
-                    process_and_store_embeddings(
-                        crawl_result_id=row["id"], 
-                        text_content=row["text_content"],
-                        title=row.get("title"),
-                        meta_description=row.get("meta_description"),
-                        metadata={"job_id": job_id}
-                    )
+        # Notify WebSocket that the crawl has finished
+        import requests
+        import os
+        port = os.environ.get("PORT", "8000")
+        webhook_url = f"http://127.0.0.1:{port}/api/v1/webhook/crawls/{job_id}"
+        try:
+            requests.post(webhook_url, json={"status": final_status, "job_id": job_id}, timeout=3)
+        except Exception as e:
+            logger.error(f"Failed to notify webhook of completion: {e}")
+            
     except Exception as e:
         logger.error(f"Failed to update job status or generate embeddings: {e}")
 
