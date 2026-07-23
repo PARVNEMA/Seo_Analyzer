@@ -21,13 +21,19 @@ function App() {
   const ws = useRef<WebSocket | null>(null)
 
   const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
-  const WS_BASE_URL = import.meta.env.VITE_WS_URL || 'ws://localhost:8000';
+  const WS_BASE_URL = import.meta.env.VITE_WS_URL || API_BASE_URL.replace(/^http/, 'ws');
 
   useEffect(() => {
     if (!jobId) return;
 
     // Connect to WebSocket
-    ws.current = new WebSocket(`${WS_BASE_URL}/api/v1/ws/crawls/${jobId}`)
+    const token = localStorage.getItem('token');
+    const wsUrl = new URL(`${WS_BASE_URL}/api/v1/ws/crawls/${jobId}`);
+    if (token) {
+      wsUrl.searchParams.append('token', token);
+    }
+    
+    ws.current = new WebSocket(wsUrl.toString())
     
     ws.current.onopen = () => {
       console.log('Connected to WebSocket')
@@ -38,8 +44,8 @@ function App() {
       setResults(prev => [...prev, data])
     }
 
-    ws.current.onclose = () => {
-      console.log('Disconnected from WebSocket')
+    ws.current.onclose = (event) => {
+      console.log('Disconnected from WebSocket', event.code, event.reason)
       setStatus(prev => prev === 'stopped' ? 'stopped' : 'completed')
     }
 
@@ -57,15 +63,28 @@ function App() {
     setJobId(null)
 
     try {
+      const headers: Record<string, string> = {}
+      const token = localStorage.getItem('token')
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`
+      }
+
       const response = await fetch(`${API_BASE_URL}/api/v1/crawler/${type}?target_url=${encodeURIComponent(targetUrl)}`, {
-        method: 'POST'
+        method: 'POST',
+        headers
       })
       const data = await response.json()
+      
+      if (!response.ok) {
+        throw new Error(data.detail || data.message || 'Failed to start crawl')
+      }
+      
       setJobId(data.job_id)
       setStatus('running')
-    } catch (err) {
+    } catch (err: any) {
       console.error(err)
       setStatus('failed')
+      alert(`Error: ${err.message}`)
     }
   }
 

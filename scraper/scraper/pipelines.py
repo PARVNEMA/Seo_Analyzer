@@ -1,3 +1,4 @@
+import os
 import requests
 import logging
 
@@ -10,7 +11,8 @@ class WebhookPipeline:
             logger.warning("No job_id provided, skipping webhook post.")
             return item
 
-        webhook_url = f"http://127.0.0.1:8000/api/v1/webhook/crawls/{job_id}"
+        port = os.environ.get("PORT", "8000")
+        webhook_url = f"http://127.0.0.1:{port}/api/v1/webhook/crawls/{job_id}"
 
         # item is typically a dict
         data = dict(item)
