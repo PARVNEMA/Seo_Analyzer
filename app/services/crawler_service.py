@@ -86,7 +86,6 @@ def run_scrapy_process(job_id: str, target_url: str, spider_name: str, scraper_d
         
         # Notify WebSocket that the crawl has finished
         import requests
-        import os
         port = os.environ.get("PORT", "8000")
         webhook_url = f"http://127.0.0.1:{port}/api/v1/webhook/crawls/{job_id}"
         try:
