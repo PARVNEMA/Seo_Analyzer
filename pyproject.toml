@@ -32,7 +32,6 @@ dependencies = [
     "langgraph>=1.2.8",
     "langgraph-checkpoint-sqlite>=3.1.0",
     "mypy==1.11.0",
-    "numpy>=1.26.0",
     "passlib[bcrypt]==1.7.4",
     "pre-commit==3.8.0",
     "pydantic==2.9.0",
