@@ -15,14 +15,14 @@ embedding_model = HuggingFaceEndpointEmbeddings(
 )
 
 def process_and_store_embeddings(
-    crawl_result_id: str, 
-    text_content: str, 
-    title: str = None, 
-    meta_description: str = None, 
+    crawl_result_id: str,
+    text_content: str,
+    title: str = None,
+    meta_description: str = None,
     metadata: Dict[str, Any] = None
 ):
     """
-    Takes a single crawl result, combines its title, meta_description and text_content, 
+    Takes a single crawl result, combines its title, meta_description and text_content,
     chunks it, generates embeddings, and stores them asynchronously into the Supabase pgvector table.
     """
     try:
@@ -38,9 +38,9 @@ def process_and_store_embeddings(
             combined_parts.append(f"Title: {title.strip()}")
         if meta_description:
             combined_parts.append(f"Meta Description: {meta_description.strip()}")
-        
+
         combined_parts.append(f"Content:\n{text_content.strip()}")
-        
+
         combined_text = "\n\n".join(combined_parts)
 
         # Initialize text splitter
@@ -60,21 +60,25 @@ def process_and_store_embeddings(
         logger.info(f"Created {len(chunks)} chunks. Generating embeddings...")
 
         # Generate embeddings for each chunk sequentially to avoid HF API 429 rate limits
-        import threading
-        if not hasattr(embedding_model, '_lock'):
-            embedding_model._lock = threading.Lock()
-            
-        with embedding_model._lock:
-            embeddings = embedding_model.embed_documents(chunks)
+        try:
+            import threading
+            if not hasattr(embedding_model, '_lock'):
+                embedding_model._lock = threading.Lock()
+
+            with embedding_model._lock:
+                embeddings = embedding_model.embed_documents(chunks)
+        except Exception as e:
+            logger.error(f"Error generating embeddings: {e}")
+            return
 
         # Prepare data for insertion
         records_to_insert = []
         base_meta = metadata or {}
-        
+
         for i, (chunk, embedding) in enumerate(zip(chunks, embeddings)):
             chunk_meta = base_meta.copy()
             chunk_meta["chunk_index"] = i
-            
+
             records_to_insert.append({
                 "crawl_result_id": crawl_result_id,
                 "content": chunk,

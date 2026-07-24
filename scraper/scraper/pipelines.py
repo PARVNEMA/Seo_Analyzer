@@ -18,6 +18,8 @@ class WebhookPipeline:
         data = dict(item)
         data['job_id'] = job_id
 
+        logger.info(f"Posting to webhook URL: {webhook_url} with data: {data}")
+
         try:
             response = requests.post(webhook_url, json=data, timeout=5)
             if response.status_code != 200:
